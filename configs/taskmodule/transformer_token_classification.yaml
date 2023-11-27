@@ -1,0 +1,14 @@
+_target_: src.taskmodules.MyTransformerTokenClassificationTaskModule
+
+tokenizer_name_or_path: bert-base-uncased
+
+entity_annotation: entities
+# Long sequence handling
+#max_window: 512
+#window_overlap: 64
+# Alternative to fixed size windowing: use span annotations to partition the input
+# (this requires to add these annotations to the documents beforehand!)
+#partition_annotation: paragraphs
+
+# Further parameters (also see the source code of TransformerTokenClassificationTaskModule)
+#include_ill_formed_predictions: false
