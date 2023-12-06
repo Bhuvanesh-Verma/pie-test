@@ -113,7 +113,7 @@ def test_document(document, dataset_variant):
         sorted_entity_tuples = [
             (str(ent), ent.label) for ent in sorted(document.spans, key=lambda ent: ent.start)
         ]
-        # Checking the first ten entities
+        # Checking all entities
         assert sorted_entity_tuples == [
             ("Brennen", "DISORDER"),
             ("massive Nervosität", "DISORDER"),
