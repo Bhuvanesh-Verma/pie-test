@@ -1,4 +1,5 @@
 import dataclasses
+from collections import defaultdict
 from typing import List, Optional, Union
 
 import pytest
@@ -6,7 +7,7 @@ from datasets import disable_caching
 from pie_datasets import DatasetDict
 from pie_datasets.builders.brat import BratDocument, BratDocumentWithMergedSpans
 from pie_modules.document.processing import tokenize_document
-from pytorch_ie.annotations import BinaryRelation, LabeledSpan
+from pytorch_ie.annotations import BinaryRelation, LabeledMultiSpan, LabeledSpan
 from pytorch_ie.core import AnnotationList, annotation_field
 from pytorch_ie.documents import TextDocumentWithLabeledSpansAndBinaryRelations, TokenBasedDocument
 from transformers import AutoTokenizer, PreTrainedTokenizer
@@ -59,12 +60,54 @@ def test_document(document, dataset_variant):
     )
     if dataset_variant == "default":
         assert isinstance(document, BratDocument)
+        span = document.spans[0]
+        assert isinstance(span, LabeledMultiSpan)
         # TODO
     elif dataset_variant == "merge_fragmented_spans":
         assert isinstance(document, BratDocumentWithMergedSpans)
+        span = document.spans[0]
+        assert isinstance(span, LabeledSpan)
         # TODO
     else:
         raise ValueError(f"Unknown dataset variant: {dataset_variant}")
+
+
+def my_converter(document: BratDocument) -> TextDocumentWithLabeledSpansAndBinaryRelations:
+    spans = document.spans
+    new_doc = TextDocumentWithLabeledSpansAndBinaryRelations(text=document.text)
+    new_spans = []
+    old2new_span = defaultdict(list)
+    for span in spans:
+        slices = span.slices
+        label = span.label
+        score = span.score
+        for slice in slices:
+            new_span = LabeledSpan(start=slice[0], end=slice[1], label=label, score=score)
+            new_spans.append(new_span)
+            old2new_span[span].append(new_span)
+    new_doc.labeled_spans.extend(new_spans)
+    rels = document.relations
+    new_rels = []
+    for rel in rels:
+        head = rel.head
+        tail = rel.tail
+
+        new_heads = old2new_span[head]
+        new_tails = old2new_span[tail]
+
+        for new_head in new_heads:
+            for new_tail in new_tails:
+                new_rel = BinaryRelation(
+                    head=new_head, tail=new_tail, label=rel.label, score=rel.score
+                )
+                new_rels.append(new_rel)
+
+    new_doc.binary_relations.extend(new_rels)
+
+    new_doc.id = document.id
+    new_doc.metadata = document.metadata
+
+    return new_doc
 
 
 @pytest.fixture(scope="module")
@@ -72,18 +115,10 @@ def dataset_of_text_documents_with_labeled_spans_and_binary_relations(
     dataset, dataset_variant
 ) -> Optional[DatasetDict]:
     if dataset_variant == "default":
-        with pytest.raises(ValueError) as excinfo:
-            dataset.to_document_type(TextDocumentWithLabeledSpansAndBinaryRelations)
-        assert (
-            str(excinfo.value)
-            == "No valid key (either subclass or superclass) was found for the document type "
-            "'<class 'pytorch_ie.documents.TextDocumentWithLabeledSpansAndBinaryRelations'>' in the "
-            "document_converters of the dataset. Available keys: set(). Consider adding a respective "
-            "converter to the dataset with dataset.register_document_converter(my_converter_method) "
-            "where my_converter_method should accept <class 'pie_datasets.builders.brat.BratDocument'> "
-            "as input and return '<class 'pytorch_ie.documents.TextDocumentWithLabeledSpansAndBinaryRelations'>'."
+        dataset.register_document_converter(my_converter)
+        converted_dataset = dataset.to_document_type(
+            TextDocumentWithLabeledSpansAndBinaryRelations
         )
-        converted_dataset = None
     elif dataset_variant == "merge_fragmented_spans":
         converted_dataset = dataset.to_document_type(
             TextDocumentWithLabeledSpansAndBinaryRelations
@@ -97,7 +132,82 @@ def test_dataset_of_text_documents_with_labeled_spans_and_binary_relations(
     dataset_of_text_documents_with_labeled_spans_and_binary_relations, dataset_variant
 ):
     if dataset_variant == "default":
-        assert dataset_of_text_documents_with_labeled_spans_and_binary_relations is None
+        # Check that the conversion is correct and the data makes sense
+        # get a document to check
+        doc = dataset_of_text_documents_with_labeled_spans_and_binary_relations["train"][0]
+        assert isinstance(doc, TextDocumentWithLabeledSpansAndBinaryRelations)
+        # check the entities
+        assert len(doc.labeled_spans) == 10
+        # sort the entities by their start position and convert them to tuples
+        # check the first ten entities after sorted
+        sorted_entity_tuples = [
+            (str(ent), ent.label) for ent in sorted(doc.labeled_spans, key=lambda ent: ent.start)
+        ]
+        # Checking the first ten entities
+        assert sorted_entity_tuples == [
+            ("Brennen", "DISORDER"),
+            ("massive Nervosität", "DISORDER"),
+            ("Citalopram", "DRUG"),
+            ("Angstpatienten", "DISORDER"),
+            ("AD", "DRUG"),
+            ("Citalopram", "DRUG"),
+            ("nicht mehr nehme", "CHANGE_TRIGGER"),
+            ("gehts mir wieder viel besser", "OPINION"),
+            ("schreckliche Überdrehtheit", "DISORDER"),
+            ("dachte echt ich werde verrückt", "OPINION"),
+        ]
+
+        # check the relations
+        assert len(doc.binary_relations) == 6
+        # check the first ten relations
+        relation_tuples = [
+            (str(rel.head), rel.label, str(rel.tail)) for rel in doc.binary_relations[:10]
+        ]
+        assert relation_tuples == [
+            ("nicht mehr nehme", "SIGNALS_CHANGE_OF", "Citalopram"),
+            ("Citalopram", "CAUSED", "massive Nervosität"),
+            ("massive Nervosität", "CAUSED", "Brennen"),
+            ("Citalopram", "CAUSED", "schreckliche Überdrehtheit"),
+            ("gehts mir wieder viel besser", "IS_OPINION_ABOUT", "Citalopram"),
+            ("dachte echt ich werde verrückt", "IS_OPINION_ABOUT", "schreckliche Überdrehtheit"),
+        ]
+
+        # Document with multiple span entity
+        doc = dataset_of_text_documents_with_labeled_spans_and_binary_relations["train"][-1]
+        assert isinstance(doc, TextDocumentWithLabeledSpansAndBinaryRelations)
+        # check the entities
+        assert len(doc.labeled_spans) == 9
+        # sort the entities by their start position and convert them to tuples
+        # check the first ten entities after sorted
+        sorted_entity_tuples = [
+            (str(ent), ent.label) for ent in sorted(doc.labeled_spans, key=lambda ent: ent.start)
+        ]
+        # Checking the first ten entities
+        assert sorted_entity_tuples == [
+            ("wieder", "CHANGE_TRIGGER"),
+            ("Cipralex", "DRUG"),
+            ("bekommen", "CHANGE_TRIGGER"),
+            ("5 mg", "MEASURE"),
+            ("fast alle Nebenwirkungen", "DISORDER"),
+            ("generalisierte Angst", "DISORDER"),
+            ("Angst vor allem möglichen", "DISORDER"),
+            ("Nebenwirkungen", "DISORDER"),
+            ("Arzt", "DOCTOR"),
+        ]
+
+        # check the relations
+        assert len(doc.binary_relations) == 5
+        # check the first ten relations
+        relation_tuples = [
+            (str(rel.head), rel.label, str(rel.tail)) for rel in doc.binary_relations[:10]
+        ]
+        assert relation_tuples == [
+            ("Cipralex", "HAS_DOSAGE", "5 mg"),
+            ("wieder", "SIGNALS_CHANGE_OF", "Cipralex"),
+            ("bekommen", "SIGNALS_CHANGE_OF", "Cipralex"),
+            ("Cipralex", "CAUSED", "fast alle Nebenwirkungen"),
+            ("Angst vor allem möglichen", "REFERS_TO", "generalisierte Angst"),
+        ]
     elif dataset_variant == "merge_fragmented_spans":
         # Check that the conversion is correct and the data makes sense
         # get a document to check
