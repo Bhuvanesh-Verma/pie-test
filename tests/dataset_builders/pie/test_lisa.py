@@ -129,7 +129,7 @@ def test_document(document, dataset_variant):
 
         # check the relations
         assert len(document.relations) == 6
-        # check the first ten relations
+        # check all relations
         relation_tuples = [
             (str(rel.head), rel.label, str(rel.tail)) for rel in document.relations[:10]
         ]
