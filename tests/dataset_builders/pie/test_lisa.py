@@ -66,21 +66,24 @@ def test_document(document, dataset_variant):
         # sort the entities by their start position and convert them to tuples
 
         sorted_entity_tuples = [
-            (ent.target[ent.slices[0][0] : ent.slices[0][1]], ent.label)
+            (
+                tuple(ent.target[slice_start:slice_end] for slice_start, slice_end in ent.slices),
+                ent.label,
+            )
             for ent in sorted(document.spans, key=lambda ent: ent.slices[0][0])
         ]
         # Checking all entities
         assert sorted_entity_tuples == [
-            ("Brennen", "DISORDER"),
-            ("massive Nervosität", "DISORDER"),
-            ("Citalopram", "DRUG"),
-            ("Angstpatienten", "DISORDER"),
-            ("AD", "DRUG"),
-            ("Citalopram", "DRUG"),
-            ("nicht mehr nehme", "CHANGE_TRIGGER"),
-            ("gehts mir wieder viel besser", "OPINION"),
-            ("schreckliche Überdrehtheit", "DISORDER"),
-            ("dachte echt ich werde verrückt", "OPINION"),
+            (("Brennen",), "DISORDER"),
+            (("massive Nervosität",), "DISORDER"),
+            (("Citalopram",), "DRUG"),
+            (("Angstpatienten",), "DISORDER"),
+            (("AD",), "DRUG"),
+            (("Citalopram",), "DRUG"),
+            (("nicht mehr nehme",), "CHANGE_TRIGGER"),
+            (("gehts mir wieder viel besser",), "OPINION"),
+            (("schreckliche Überdrehtheit",), "DISORDER"),
+            (("dachte echt ich werde verrückt",), "OPINION"),
         ]
 
         # check the relations
@@ -88,19 +91,29 @@ def test_document(document, dataset_variant):
 
         relation_tuples = [
             (
-                rel.head.target[rel.head.slices[0][0] : rel.head.slices[0][1]],
+                tuple(
+                    rel.head.target[slice_start:slice_end]
+                    for slice_start, slice_end in rel.head.slices
+                ),
                 rel.label,
-                rel.tail.target[rel.tail.slices[0][0] : rel.tail.slices[0][1]],
+                tuple(
+                    rel.tail.target[slice_start:slice_end]
+                    for slice_start, slice_end in rel.tail.slices
+                ),
             )
             for rel in document.relations
         ]
         assert relation_tuples == [
-            ("nicht mehr nehme", "SIGNALS_CHANGE_OF", "Citalopram"),
-            ("Citalopram", "CAUSED", "massive Nervosität"),
-            ("massive Nervosität", "CAUSED", "Brennen"),
-            ("Citalopram", "CAUSED", "schreckliche Überdrehtheit"),
-            ("gehts mir wieder viel besser", "IS_OPINION_ABOUT", "Citalopram"),
-            ("dachte echt ich werde verrückt", "IS_OPINION_ABOUT", "schreckliche Überdrehtheit"),
+            (("nicht mehr nehme",), "SIGNALS_CHANGE_OF", ("Citalopram",)),
+            (("Citalopram",), "CAUSED", ("massive Nervosität",)),
+            (("massive Nervosität",), "CAUSED", ("Brennen",)),
+            (("Citalopram",), "CAUSED", ("schreckliche Überdrehtheit",)),
+            (("gehts mir wieder viel besser",), "IS_OPINION_ABOUT", ("Citalopram",)),
+            (
+                ("dachte echt ich werde verrückt",),
+                "IS_OPINION_ABOUT",
+                ("schreckliche Überdrehtheit",),
+            ),
         ]
     elif dataset_variant == "merge_fragmented_spans":
         assert isinstance(document, BratDocumentWithMergedSpans)
