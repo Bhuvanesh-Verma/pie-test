@@ -64,12 +64,12 @@ def test_document(document, dataset_variant):
         assert isinstance(span, LabeledMultiSpan)
         assert len(document.spans) == 10
         # sort the entities by their start position and convert them to tuples
-        # check the first ten entities after sorted
+
         sorted_entity_tuples = [
             (ent.target[ent.slices[0][0] : ent.slices[0][1]], ent.label)
             for ent in sorted(document.spans, key=lambda ent: ent.slices[0][0])
         ]
-        # Checking the first ten entities
+        # Checking all entities
         assert sorted_entity_tuples == [
             ("Brennen", "DISORDER"),
             ("massive Nervosität", "DISORDER"),
@@ -85,14 +85,14 @@ def test_document(document, dataset_variant):
 
         # check the relations
         assert len(document.relations) == 6
-        # check the first ten relations
+
         relation_tuples = [
             (
                 rel.head.target[rel.head.slices[0][0] : rel.head.slices[0][1]],
                 rel.label,
                 rel.tail.target[rel.tail.slices[0][0] : rel.tail.slices[0][1]],
             )
-            for rel in document.relations[:10]
+            for rel in document.relations
         ]
         assert relation_tuples == [
             ("nicht mehr nehme", "SIGNALS_CHANGE_OF", "Citalopram"),
@@ -109,7 +109,7 @@ def test_document(document, dataset_variant):
 
         assert len(document.spans) == 10
         # sort the entities by their start position and convert them to tuples
-        # check the first ten entities after sorted
+
         sorted_entity_tuples = [
             (str(ent), ent.label) for ent in sorted(document.spans, key=lambda ent: ent.start)
         ]
@@ -129,10 +129,8 @@ def test_document(document, dataset_variant):
 
         # check the relations
         assert len(document.relations) == 6
-        # check all relations
-        relation_tuples = [
-            (str(rel.head), rel.label, str(rel.tail)) for rel in document.relations[:10]
-        ]
+
+        relation_tuples = [(str(rel.head), rel.label, str(rel.tail)) for rel in document.relations]
         assert relation_tuples == [
             ("nicht mehr nehme", "SIGNALS_CHANGE_OF", "Citalopram"),
             ("Citalopram", "CAUSED", "massive Nervosität"),
@@ -168,11 +166,11 @@ def test_dataset_of_text_documents_with_labeled_spans_and_binary_relations(
         # check the entities
         assert len(doc.labeled_spans) == 10
         # sort the entities by their start position and convert them to tuples
-        # check the first ten entities after sorted
+
         sorted_entity_tuples = [
             (str(ent), ent.label) for ent in sorted(doc.labeled_spans, key=lambda ent: ent.start)
         ]
-        # Checking the first ten entities
+        # Checking all entities
         assert sorted_entity_tuples == [
             ("Brennen", "DISORDER"),
             ("massive Nervosität", "DISORDER"),
@@ -188,9 +186,9 @@ def test_dataset_of_text_documents_with_labeled_spans_and_binary_relations(
 
         # check the relations
         assert len(doc.binary_relations) == 6
-        # check the first ten relations
+
         relation_tuples = [
-            (str(rel.head), rel.label, str(rel.tail)) for rel in doc.binary_relations[:10]
+            (str(rel.head), rel.label, str(rel.tail)) for rel in doc.binary_relations
         ]
         assert relation_tuples == [
             ("nicht mehr nehme", "SIGNALS_CHANGE_OF", "Citalopram"),
@@ -207,11 +205,11 @@ def test_dataset_of_text_documents_with_labeled_spans_and_binary_relations(
         # check the entities
         assert len(doc.labeled_spans) == 9
         # sort the entities by their start position and convert them to tuples
-        # check the first ten entities after sorted
+
         sorted_entity_tuples = [
             (str(ent), ent.label) for ent in sorted(doc.labeled_spans, key=lambda ent: ent.start)
         ]
-        # Checking the first ten entities
+        # Checking all entities
         assert sorted_entity_tuples == [
             ("wieder", "CHANGE_TRIGGER"),
             ("Cipralex", "DRUG"),
@@ -226,9 +224,9 @@ def test_dataset_of_text_documents_with_labeled_spans_and_binary_relations(
 
         # check the relations
         assert len(doc.binary_relations) == 6
-        # check the first ten relations
+
         relation_tuples = [
-            (str(rel.head), rel.label, str(rel.tail)) for rel in doc.binary_relations[:10]
+            (str(rel.head), rel.label, str(rel.tail)) for rel in doc.binary_relations
         ]
         assert relation_tuples == [
             ("wieder", "parts_of_same", "bekommen"),
@@ -246,11 +244,11 @@ def test_dataset_of_text_documents_with_labeled_spans_and_binary_relations(
         # check the entities
         assert len(doc.labeled_spans) == 10
         # sort the entities by their start position and convert them to tuples
-        # check the first ten entities after sorted
+
         sorted_entity_tuples = [
             (str(ent), ent.label) for ent in sorted(doc.labeled_spans, key=lambda ent: ent.start)
         ]
-        # Checking the first ten entities
+        # Checking all entities
         assert sorted_entity_tuples == [
             ("Brennen", "DISORDER"),
             ("massive Nervosität", "DISORDER"),
@@ -266,9 +264,9 @@ def test_dataset_of_text_documents_with_labeled_spans_and_binary_relations(
 
         # check the relations
         assert len(doc.binary_relations) == 6
-        # check the first ten relations
+
         relation_tuples = [
-            (str(rel.head), rel.label, str(rel.tail)) for rel in doc.binary_relations[:10]
+            (str(rel.head), rel.label, str(rel.tail)) for rel in doc.binary_relations
         ]
         assert relation_tuples == [
             ("nicht mehr nehme", "SIGNALS_CHANGE_OF", "Citalopram"),
@@ -335,7 +333,7 @@ def test_tokenized_documents_with_labeled_spans_and_binary_relations(
         sorted_entity_tuples = [
             (str(ent), ent.label) for ent in sorted(doc.labeled_spans, key=lambda ent: ent.start)
         ]
-        assert sorted_entity_tuples[:10] == [
+        assert sorted_entity_tuples == [
             ("('br', '##enne', '##n')", "DISORDER"),
             ("('massive', 'ne', '##r', '##vos', '##ita', '##t')", "DISORDER"),
             ("('ci', '##tal', '##op', '##ram')", "DRUG"),

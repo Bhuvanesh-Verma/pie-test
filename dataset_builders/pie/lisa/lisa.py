@@ -1,3 +1,4 @@
+import copy
 import os.path
 from collections import defaultdict
 
@@ -20,7 +21,7 @@ def convert_to_text_document_with_labeled_spans_and_binary_relations(
 
     spans = document.spans
     new_doc = TextDocumentWithLabeledSpansAndBinaryRelations(
-        text=document.text, id=document.id, metadata=document.metadata
+        text=document.text, id=document.id, metadata=copy.deepcopy(document.metadata)
     )
 
     candidate_spans = [span for span in spans if len(span.slices) > 1]
@@ -41,9 +42,7 @@ def convert_to_text_document_with_labeled_spans_and_binary_relations(
         new_spans.sort(key=lambda span: span.start)
         new_rels.extend(
             [
-                BinaryRelation(
-                    head=new_spans[i], tail=new_spans[i + 1], label="parts_of_same", score=1.0
-                )
+                BinaryRelation(head=new_spans[i], tail=new_spans[i + 1], label="parts_of_same")
                 for i in range(len(new_spans) - 1)
             ]
         )
