@@ -1,7 +1,7 @@
 # @package _global_
 
 # to execute this experiment run:
-# python train.py experiment=lisa-ner
+# python train.py experiment=lisa-re
 
 defaults:
   - override /dataset: lisa_prepared.yaml
@@ -16,9 +16,9 @@ defaults:
 # this allows you to overwrite only specified parameters
 
 # name of the run determines folder name in logs
-name: "dataset+lisa/task+entities"
+name: "dataset+lisa/task+relations"
 
-tags: ["dataset=lisa", "model=named_entity_recognition"]
+tags: ["dataset=lisa", "model=relation_extraction"]
 
 seed: 12345
 
@@ -38,7 +38,6 @@ taskmodule:
 
 model:
   model_name_or_path: ${transformer_model}
-  # configure learning rate. Default learning rate is set in model constructor (here: TransformerTokenClassificationModel)
   learning_rate: 1e-5
 
 model_save_dir: ${paths.save_dir}/models/${name}/${now:%Y-%m-%d_%H-%M-%S}
