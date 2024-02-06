@@ -2,7 +2,7 @@ _target_: pie_modules.taskmodules.RETextClassificationWithIndicesTaskModule
 
 tokenizer_name_or_path: bert-base-uncased
 add_candidate_relations: True
-max_length: 512
+max_window: 512
 ## Long sequence handling
 ## example: split the input into windows of 512 tokens that have 64 tokens overlap
 # tokenizer_kwargs:
