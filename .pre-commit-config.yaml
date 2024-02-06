@@ -81,7 +81,7 @@ repos:
     hooks:
       - id: codespell
         args:
-          - --skip=logs/**,data/**,*.ipynb
+          - --skip=logs/**,data/**,tests/dataset_builders/**,*.ipynb
           # ignore
           #  - "hist": this is a plotext function
           - --ignore-words-list=hist
